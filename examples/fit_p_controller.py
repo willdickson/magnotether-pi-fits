@@ -5,9 +5,9 @@ from magnotether_pi_fits.p_controller import plot_omega_fits
 from magnotether_pi_fits.p_controller import plot_deriv_fits
 from magnotether_pi_fits.p_controller import plot_ki_estimates 
 
-data_dir = pathlib.Path('data')
+data_dir = pathlib.Path('data/mean')
 
-fit_results = fit_p_controller_to_datasets(
+p_fit_dict = fit_p_controller_to_datasets(
         data_dir, 
         guess=[0.0, 3.0], 
         omega_min=20.0, 
@@ -16,17 +16,17 @@ fit_results = fit_p_controller_to_datasets(
         )
 
 if 1:
-    plot_omega_fits(fit_results, plot_ol=True)
+    plot_omega_fits(p_fit_dict, plot_ol=True)
 
 if 1:
     plot_deriv_fits(
-            fit_results, 
+            p_fit_dict, 
             title_str='P-controller mean derivative fits (closed-loop period)'
             )
 
 if 1:
     ki_results = estimate_ki_from_openloop(
-            fit_results, 
+            p_fit_dict, 
             end_win_cl = 0.5, 
             end_win_ol = 10.0,
             disp=False,

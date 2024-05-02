@@ -20,7 +20,7 @@ p_fit_dict = fit_p_controller_to_datasets(
 guess = get_initial_guess(p_fit_dict)
 bounds = ((0.01,100), (0,100), (0.0, 100))
 
-pi_fit_dict = fit_pi_controller_to_datasets(
+pi_fit_dict = ensemble_fit_pi_controller(
         data_dir, 
         guess=guess, 
         omega_min=20.0, 
@@ -29,22 +29,19 @@ pi_fit_dict = fit_pi_controller_to_datasets(
         include_ol=True,
         bounds=bounds,
         fit_win_cl=3.0, 
-        #fit_win_cl=None, 
         fit_win_ol=None,
         )
 if 1:
     plot_omega_fits(
             pi_fit_dict, 
-            title_str='PI-controller mean fits',
-            #save_name='pi_controller_mean_fits.png', 
-            save_name=None, 
+            title_str='PI-controller ensemble fit',
+            save_name='pi_controller_ensemble_fit.png',
             )
-
 if 1:
     plot_deriv_fits(
-            pi_fit_dict, 
-            n = 1, 
-            title_str='PI-controller mean derivative fit', 
+            pi_fit_dict,
+            n=1, 
+            title_str='PI-controller ensemble derivative fit',
             figsize =(20,12),
             )
 
