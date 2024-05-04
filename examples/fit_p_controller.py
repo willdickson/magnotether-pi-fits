@@ -4,6 +4,7 @@ from magnotether_pi_fits.p_controller import estimate_ki_from_openloop
 from magnotether_pi_fits.p_controller import plot_omega_fits
 from magnotether_pi_fits.p_controller import plot_deriv_fits
 from magnotether_pi_fits.p_controller import plot_ki_estimates 
+from magnotether_pi_fits.p_controller import plot_p_and_pi_openloop
 
 data_dir = pathlib.Path('data/mean')
 
@@ -31,5 +32,9 @@ if 1:
             end_win_ol = 10.0,
             disp=False,
             )
-    plot_ki_estimates(ki_results)
+    if 1:
+        plot_ki_estimates(ki_results)
+
+    if 1:
+        plot_p_and_pi_openloop(p_fit_dict, ki_results)
 
