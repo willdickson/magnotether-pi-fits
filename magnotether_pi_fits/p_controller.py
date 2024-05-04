@@ -201,10 +201,10 @@ def plot_omega_fits(results_dict, plot_ol=False, save_name=None, figsize=(12,10)
         flag indicating whether or not to include openloop data and prediction
         in the plots.
 
-    save_name : str or None
+    save_name : str or None (optional)
         file name for saving figure.  Not save if None. 
 
-    figsize : tuple
+    figsize : tuple (optional)
         figure size (w,h)
 
     """
@@ -271,6 +271,60 @@ def estimate_ki_from_openloop(results_dict, end_win_cl=0.5,  end_win_ol=10.0, di
     end_win_ol : float
         averaging window (s) used to find final value of omega in open-loop data section. 
 
+    Returns
+    -------
+    ki_results : dict
+        results for estimating the integral gain for the different trials.
+        Estimate is made using the initial condition (omega at end of
+        closed-loop period), final condition (omega at the end of the open-loop
+        period) and the integral error during the closed-loop period. 
+
+        ki_results = {
+            'ierr'         : ierr, 
+            'omega_end_cl' : omega_end_cl, 
+            'omega_end_ol' : omega_end_ol, 
+            'ki_estimate'  : ki_estimate, 
+            }
+
+        where
+        ierr = {
+            duration0 : {
+                'data'  : ierr_value, 
+                'model' : ierr_value,
+                },
+            duration1 : { 
+                ...
+                }
+                ...
+            }
+
+        omega_end_cl = {
+            duration0 : {
+                'data'  : omega_value, 
+                'model' : omega_value,
+                }, 
+            duration1 : {
+                ...
+                }, 
+            ...
+            }
+
+        omega_end_ol = {
+            duration0 : omega_value,  
+            duration1 : omega_value,  
+            ...
+            }
+
+        ki_estimate = {
+            duration0 : {
+                'data'  : ki_value, 
+                'model' : ki_value,
+                }, 
+            duration1 : {
+                ...
+                }, 
+            ...
+            }
     """
     if disp:
         print()
@@ -438,12 +492,15 @@ def plot_deriv_fits(results_dict, title_str=None, figsize=(20,12), save_name=Non
     results_dict : dict
         dictionary of fit results as returned by either ensemble_fit_pi_controller or
         fit_pi_controller_to_datasets
-    figsize : tuple
-        size of figure (width, height)
-    save_name : str
-        name of saved figure file or None
-    title_str : str
+
+    title_str : str (optional)
         title string for figure
+
+    figsize : tuple (optional)
+        size of figure (width, height)
+
+    save_name : str (optional)
+        name of saved figure file or None
     ---------
 
     """
@@ -485,6 +542,75 @@ def plot_deriv_fits(results_dict, title_str=None, figsize=(20,12), save_name=Non
         fig.suptitle(title_str)
     if save_name is not None:
         fig.savefig(f'{save_name}')
+    plt.show()
+
+
+def plot_p_and_pi_openloop(p_fit_dict, ki_results, ki_type='model', figsize=(10,7), save_name=None):
+    """ Plot omega vs time for p-controller and pi-controller during the openloop
+    period.
+
+    Parameters
+    ----------
+    p_fit_dict : dict
+        dictionary of proportional controller fit results as returned by
+        fit_p_controller_to_datasets
+
+    ki_results : dict
+        dictionary of ki estimates as returned by estimate_ki_from_openloop
+
+    ki_type : str (optional)
+        string indicating which ki estimate to use 'model' or 'data'
+
+    figsize : tuple (optional)
+        figure size (w,h)
+
+    save_name : str or None (optional)
+        file name for saving figure.  Not save if None. 
+
+    """
+
+    fig, ax = plt.subplots(len(p_fit_dict['duration']),1, sharex=True, figsize=figsize)
+    fig.subplots_adjust(hspace=0.1)
+    plot_cnt = 0
+
+    for duration, result in p_fit_dict['duration'].items(): 
+
+        # Extract open loop data 
+        open_loop = result['open_loop']
+        t_ol = open_loop['t']
+        t_ol = t_ol - t_ol[0]
+        setpt_ol = open_loop['setpt']
+        omega_ol = open_loop['omega']
+        omega_fit_ol = open_loop['omega_fit']
+
+        # Extract estimated ki and values required for trajectory prediction
+        d = result['d']
+        ki = ki_results['ki_estimate'][duration][ki_type]
+        ierr = ki_results['ierr'][duration][ki_type]
+        omega_end_cl = ki_results['omega_end_cl'][duration][ki_type]
+        omega_end_ol = ki_results['omega_end_ol'][duration]
+
+        # Get trajectory for pi-controller during open-loop period with
+        # estimate intergral gain ki
+        omega_eq_for_pi = ki*ierr/d
+        omega_fit_pi = models.exponential_decay(t_ol, d, omega_end_cl, omega_eq_for_pi)
+
+        # Plot comparison
+        data_line, = ax[plot_cnt].plot(t_ol, omega_ol, 'o', c='gray', alpha=0.4)
+        fit_line,  = ax[plot_cnt].plot(t_ol, omega_fit_ol, 'b', linewidth=2)
+        pi_line,   = ax[plot_cnt].plot(t_ol, omega_fit_pi, 'g', linewidth=2)
+        ax[plot_cnt].set_ylabel(r'$\omega$')
+        ax[plot_cnt].grid(True)
+        if plot_cnt == 0:
+            ax[plot_cnt].set_title('Open-loop: P-Controller to Pi-Controller comparison')
+            line_list = (data_line, fit_line, pi_line)
+            legend_list = ('data', 'p-controller', 'pi-controller' )
+            ax[plot_cnt].legend(line_list, legend_list, loc='upper right')
+        plot_cnt += 1
+
+    ax[len(p_fit_dict)-1].set_xlabel('t (sec)')
+    if save_name is not None:
+        fig.savefig(save_name)
     plt.show()
 
 
